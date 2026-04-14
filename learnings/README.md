@@ -17,8 +17,8 @@ Phase 경계를 가로지르는 글로벌 파일:
 
 | Phase | 주제 | Q&A | 회고 | 배운 것 (2줄) |
 |---|---|---|---|---|
-| 01 | 부트스트랩 — Typer + pytest | [phase01-qa.md](phase01-qa.md) | (pending) | — |
-| 02 | `.list` 파서 | (pending) | (pending) | — |
+| 01 | 부트스트랩 — Typer + pytest | [phase01-qa.md](phase01-qa.md) | (skipped) | CliRunner는 같은 app을 캡처로만 바꾼 실행기. exit code는 프로세스 경계의 HTTP status |
+| 02 | `.list` 파서 (Value Object) | [phase02-qa.md](phase02-qa.md) | (pending) | 파이썬의 `__eq__`/`__hash__`/`__repr__`은 독립된 세 메서드이고 기본값은 전부 주소 기반. VO는 이 셋을 값 기반으로 교체해야 존재함 |
 | 03 | `slice` 커맨드 | (pending) | (pending) | — |
 | 04 | `asr` 커맨드 | (pending) | (pending) | — |
 | 05 | `review` — 내비게이션 | (pending) | (pending) | — |
