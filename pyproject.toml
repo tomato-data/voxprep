@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "voxprep"
+version = "0.0.1"
+description = "GPT-SoVITS dataset preprocessing CLI (slice / asr / review / prep)"
+requires-python = ">=3.10"
+readme = "CLAUDE.md"
+dependencies = [
+    "typer>=0.12",
+    "rich>=13",
+    "prompt_toolkit>=3",
+]
+
+[project.scripts]
+voxprep = "voxprep.cli:app"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

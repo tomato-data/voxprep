@@ -20,6 +20,8 @@ build/
 .coverage
 htmlcov/
 
+# uv — note: uv.lock IS tracked (reproducibility), only the venv is ignored
+
 # IDE
 .vscode/
 .idea/
