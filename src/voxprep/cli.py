@@ -1,8 +1,10 @@
 import typer
 
 from voxprep import __version__
+from voxprep.commands.slice import slice_command
 
 app = typer.Typer(help="voxprep — GPT-SoVITS preprocessing CLI")
+app.command(name="slice")(slice_command)
 
 @app.callback()
 def main() -> None:
