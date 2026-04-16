@@ -12,6 +12,8 @@ dependencies = [
     "typer>=0.12",
     "rich>=13",
     "prompt_toolkit>=3",
+    "numpy>=2.2.6",
+    "soundfile>=0.13.1",
 ]
 
 [project.scripts]
