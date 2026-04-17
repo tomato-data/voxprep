@@ -6,16 +6,9 @@ from rich.console import Console
 
 from voxprep.parsing.list_file import read_list_file
 from voxprep.review.session import ReviewSession
-from voxprep.review.keybindings import Dispatcher, ReviewOutcome
+from voxprep.review.keybindings import build_default_dispatcher
 from voxprep.review.loop import run_review_loop
-
-
-def _build_default_dispatcher() -> Dispatcher:
-    d = Dispatcher()
-    d.register("n", lambda s: (s.next(), ReviewOutcome.CONTINUE)[1])
-    d.register("b", lambda s: (s.prev(), ReviewOutcome.CONTINUE)[1])
-    d.register("q", lambda s: ReviewOutcome.QUIT)
-    return d
+from voxprep.review.player import SubprocessAudioPlayer
 
 
 def _stdin_key_source():
@@ -48,7 +41,11 @@ def review_command(
         raise typer.Exit(1)
 
     session = ReviewSession(list_path=list_file, entries=entries)
-    dispatcher = _build_default_dispatcher()
+    player = SubprocessAudioPlayer()
+    dispatcher = build_default_dispatcher(player=player)
     console = Console()
 
-    run_review_loop(session, dispatcher, key_source=_stdin_key_source(), console=console)
+    try:
+        run_review_loop(session, dispatcher, key_source=_stdin_key_source(), console=console)
+    finally:
+        player.stop()
