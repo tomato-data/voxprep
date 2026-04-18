@@ -14,7 +14,7 @@
 - **macOS Apple Silicon as the first-class target** — default flags (`--language ko`, `--model-size large-v3-turbo`, CPU for CTranslate2) reflect the environment I actually use, not the reference WebUI defaults
 - **AI-assisted, user-typed** — Claude is the tutor; I type every line of `src/voxprep/**` and `tests/**`. Q&A and gotchas are accumulated in [`learnings/`](learnings/) in real time
 
-> **Current status**: Phase 02 in progress. The `version` command works. The `.list` parser is at scenario D of 7 (Value Object with manual `__eq__`/`__hash__`, custom exception). The rest of the CLI is a contract — see the [roadmap](#roadmap--10-phases) for what's coming.
+> **Current status**: Phases 01–15 complete. voxprep now covers the full lifecycle: `slice → asr → review → prep → extract → train → infer`. End-to-end usage is documented in [**`docs/GUIDE.md`**](docs/GUIDE.md). Remaining roadmap: progress UX (Phase 11), to-wav utility (12), review loop unification (18), tkinter GUI (16), MCP/REST server (17).
 
 ---
 
@@ -58,24 +58,28 @@ Alongside the practical CLI, I'm using the project to embody **TDD Red-Green-Ref
 
 ---
 
-## Roadmap — 10 Phases
+## Roadmap
 
-| # | Phase | Deliverable | First ODP Object Introduced | Status |
-|---|-------|-------------|-----------------------------|--------|
-| 01 | Bootstrap — Typer + pytest | `voxprep version` | *(none yet — just adapters)* | ✅ |
-| 02 | `.list` parser | `ListEntry` + `read/write_list_file` | **Value Object** | 🔄 |
-| 03 | `slice` command | `voxprep slice <in> <out>` | **Service** (`Slicer`) | ⏳ |
-| 04 | `asr` command | `voxprep asr <dir>` | Service + DI + fake double | ⏳ |
-| 05 | `review` — navigation | `voxprep review` (`n`/`b`/`q`) | **Entity** (cursor state) | ⏳ |
-| 06 | `review` — audio playback | `Enter` to play | subprocess seam | ⏳ |
-| 07 | `review` — inline editing | `e` to edit | prompt_toolkit `default=` | ⏳ |
-| 08 | `review` — delete + undo | `d` / `u` | **Command** pattern arrival | ⏳ |
-| 09 | `review` — auto-flag | `--auto-prune` mode | rule set cohesion | ⏳ |
-| 10 | `prep` pipeline | `voxprep prep <raw>` | Rich Live composition | ⏳ |
+| Part | Phase | Deliverable | Status |
+|------|-------|-------------|--------|
+| A: Preprocessing (TDD rebuild) | 01 Bootstrap — Typer + pytest | `voxprep version` | ✅ |
+| | 02 `.list` parser (Value Object) | `ListEntry` | ✅ |
+| | 03 `slice` command | `voxprep slice` | ✅ |
+| | 04 `asr` command | `voxprep asr` | ✅ |
+| | 05–09 `review` (nav/play/edit/delete+undo/auto-flag) | `voxprep review [--auto-prune]` | ✅ |
+| | 10 `prep` pipeline | `voxprep prep` | ✅ |
+| B: UX + Utility | 11 Progress feedback | (Rich Live) | ⏳ |
+| | 12 `to-wav` (영상→WAV 추출) | `voxprep to-wav` | ⏳ |
+| | 18 `review` loop unification | Full UI in `--auto-prune` | ⏳ |
+| C: Extract + Train (port) | 13 `extract` | `voxprep extract` | ✅ |
+| | 14 `train {sovits,gpt,all}` | `voxprep train ...` | ✅ |
+| D: Inference (port) | 15 `infer` CLI session | `voxprep infer` | ✅ |
+| | 16 tkinter GUI | (standalone app) | ⏳ |
+| | 17 MCP / REST (LLM tool use) | (service) | ⏳ |
 
 Legend: ✅ complete · 🔄 in progress · ⏳ pending
 
-Each phase has a guide in [`docs/phases/`](docs/phases/), Q&A in [`learnings/phaseNN-qa.md`](learnings/), and cross-phase principles in [`learnings/DISCOVERIES.md`](learnings/DISCOVERIES.md).
+Each phase has a guide in [`docs/phases/`](docs/phases/); per-phase Q&A and cross-phase principles live in [`learnings/`](learnings/). **End-to-end usage docs: [`docs/GUIDE.md`](docs/GUIDE.md).**
 
 ---
 
