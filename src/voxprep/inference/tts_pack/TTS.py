@@ -772,8 +772,12 @@ class TTS:
             self.prompt_cache["refer_spec"][0] = spec_audio
 
     def _get_ref_spec(self, ref_audio_path):
-        raw_audio, raw_sr = torchaudio.load(ref_audio_path)
-        raw_audio = raw_audio.to(self.configs.device).float()
+        # Use librosa.load to avoid torchaudio backend dependency on torchcodec
+        import librosa
+        y, raw_sr = librosa.load(ref_audio_path, sr=None, mono=False)
+        if y.ndim == 1:
+            y = y[None, :]  # (1, T)
+        raw_audio = torch.from_numpy(y).to(self.configs.device).float()
         self.prompt_cache["raw_audio"] = raw_audio
         self.prompt_cache["raw_sr"] = raw_sr
 
