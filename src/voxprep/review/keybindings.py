@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Callable
 
 from voxprep.review.player import AudioPlayer
+from voxprep.review.editor import TextEditor
 
 class ReviewOutcome(Enum):
     CONTINUE = "continue"
@@ -22,7 +23,10 @@ class Dispatcher:
         return action(session)
 
 
-def build_default_dispatcher(player: AudioPlayer | None = None) -> Dispatcher:
+def build_default_dispatcher(
+    player: AudioPlayer | None = None,
+    editor: TextEditor | None = None,
+) -> Dispatcher:
     d = Dispatcher()
     d.register("n", lambda s: (s.next(), ReviewOutcome.CONTINUE)[1])
     d.register("b", lambda s: (s.prev(), ReviewOutcome.CONTINUE)[1])
@@ -33,4 +37,12 @@ def build_default_dispatcher(player: AudioPlayer | None = None) -> Dispatcher:
             player.play(Path(s.current().audio_path)),
             ReviewOutcome.CONTINUE,
         )[-1])
+    if editor is not None:
+        def _edit_action(s):
+            new_text = editor.edit(s.current().text)
+            if new_text is not None:
+                s.update_current_text(new_text)
+                s.save()
+            return ReviewOutcome.CONTINUE
+        d.register("e", _edit_action)
     return d

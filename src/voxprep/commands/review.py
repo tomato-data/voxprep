@@ -9,6 +9,7 @@ from voxprep.review.session import ReviewSession
 from voxprep.review.keybindings import build_default_dispatcher
 from voxprep.review.loop import run_review_loop
 from voxprep.review.player import SubprocessAudioPlayer
+from voxprep.review.editor import PromptToolkitTextEditor
 
 
 def _stdin_key_source():
@@ -42,7 +43,8 @@ def review_command(
 
     session = ReviewSession(list_path=list_file, entries=entries)
     player = SubprocessAudioPlayer()
-    dispatcher = build_default_dispatcher(player=player)
+    editor = PromptToolkitTextEditor()
+    dispatcher = build_default_dispatcher(player=player, editor=editor)
     console = Console()
 
     try:
