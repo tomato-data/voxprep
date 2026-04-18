@@ -4,11 +4,13 @@ from voxprep import __version__
 from voxprep.commands.slice import slice_command
 from voxprep.commands.asr import asr_command
 from voxprep.commands.review import review_command
+from voxprep.commands.prep import prep_command
 
 app = typer.Typer(help="voxprep — GPT-SoVITS preprocessing CLI")
 app.command(name="slice")(slice_command)
 app.command(name="asr")(asr_command)
 app.command(name="review")(review_command)
+app.command(name="prep")(prep_command)
 
 @app.callback()
 def main() -> None:
