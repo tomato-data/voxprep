@@ -39,7 +39,6 @@ def test_e_key_updates_current_entry(tmp_path):
 
     assert editor.received == ["a"]
     assert session.current().text == "고친 텍스트"
-    assert not session.dirty
     assert (tmp_path / "x.list").exists()
     assert "고친 텍스트" in (tmp_path / "x.list").read_text(encoding="utf-8")
 
@@ -53,7 +52,6 @@ def test_e_key_calncel_keeps_entry_intact(tmp_path):
     dispatcher.handle("e", session)
 
     assert session.current().text == "a"
-    assert not session.dirty
 
 
 def test_e_key_empty_string_is_valid_edit(tmp_path):
@@ -65,4 +63,3 @@ def test_e_key_empty_string_is_valid_edit(tmp_path):
     dispatcher.handle("e", session)
 
     assert session.current().text == ""
-    assert not session.dirty

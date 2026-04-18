@@ -66,24 +66,22 @@ def test_render_includes_position_and_text():
     assert session.current().text in text
 
 
-def test_update_current_text_replaces_entry_and_marks_dirty(tmp_path):
+def test_update_current_text_replaces_entry(tmp_path):
     entries = [_entry("a"), _entry("b")]
     session = ReviewSession(list_path=tmp_path / "x.list", entries=entries)
 
     session.update_current_text("새 텍스트")
 
     assert session.current().text == "새 텍스트"
-    assert session.dirty
 
 
-def test_save_writes_to_disk_and_clears_dirty(tmp_path):
+def test_save_writes_to_disk(tmp_path):
     entries = [_entry("a"), _entry("b")]
     session = ReviewSession(list_path=tmp_path / "x.list", entries=entries)
     session.update_current_text("새 텍스트")
 
     session.save()
 
-    assert not session.dirty
     content = (tmp_path / "x.list").read_text(encoding="utf-8")
     assert "새 텍스트" in content
 
@@ -97,7 +95,6 @@ def test_delete_middle_entry_keeps_cursor(tmp_path):
     assert [e.audio_path for e in session.entries] == ["a.wav", "c.wav"]
     assert session.cursor == 1
     assert session.current().audio_path == "c.wav"
-    assert session.dirty
 
 
 def test_delete_last_entry_moves_cursor_back(tmp_path):

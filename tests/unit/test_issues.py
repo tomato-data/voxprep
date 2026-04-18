@@ -64,12 +64,12 @@ def test_non_interjection_passes():
 
 
 def test_non_korean_text_in_korean_entry_flags():
-      entry = ListEntry("a.wav", "s", "ko", "こんにちは")
+    entry = ListEntry("a.wav", "s", "ko", "こんにちは")
 
-      issue = check_non_korean_noise(entry)
+    issue = check_non_korean_noise(entry)
 
-      assert issue is not None
-      assert issue.code == "non_korean_noise"
+    assert issue is not None
+    assert issue.code == "non_korean_noise"
 
 
 def test_korean_text_passes():
@@ -91,12 +91,12 @@ def test_non_ko_language_entry_skipped():
 
 
 def test_too_long_flags():
-      entry = ListEntry("a.wav", "s", "ko", "가" * 60)
+    entry = ListEntry("a.wav", "s", "ko", "가" * 60)
 
-      issue = check_too_long(entry)
+    issue = check_too_long(entry)
 
-      assert issue is not None
-      assert issue.code == "too_long"
+    assert issue is not None
+    assert issue.code == "too_long"
 
 
 def test_59_chars_passes():

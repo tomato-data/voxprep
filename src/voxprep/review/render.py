@@ -13,7 +13,7 @@ def render_session(session: ReviewSession) -> Panel:
     body.append(f"  Path:     {entry.audio_path}\n")
     body.append(f"  Speaker:  {entry.speaker}\n")
     body.append(f"  Language: {entry.language}\n")
-    body.append(f"  Text:     {entry.text}\n\n")
+    body.append(f"  Text:     {entry.text}\n")
 
     issues = inspect(entry)
     if issues:

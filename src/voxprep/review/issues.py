@@ -8,7 +8,7 @@ from voxprep.parsing.list_file import ListEntry
 class Severity(Enum):
     INFO = "info"
     WARN = "warn"
-    SUSPICIOUS_DELETE_CANDIDATE = "suspicioud_delete_candidate"
+    SUSPICIOUS_DELETE_CANDIDATE = "suspicious_delete_candidate"
 
 
 MIN_TEXT_LEN = 3
@@ -35,16 +35,19 @@ def check_too_short(entry: ListEntry) -> Issue | None:
         return Issue("too_short", Severity.WARN, "Text is too short")
     return None
 
+
 def check_too_long(entry: ListEntry) -> Issue | None:
     if len(entry.text.strip()) >= MAX_TEXT_LEN:
         return Issue("too_long", Severity.WARN, "Text is too long")
     return None
+
 
 def check_interjection_only(entry: ListEntry) -> Issue | None:
     normalized = re.sub(r"(.)\1+", r"\1", entry.text.strip())
     if normalized in INTERJECTIONS:
         return Issue("interjection_only", Severity.WARN, "Interjection only")
     return None
+
 
 def check_non_korean_noise(entry: ListEntry) -> Issue | None:
     if entry.language != "ko":
@@ -69,7 +72,6 @@ def check_punctuation_only(entry: ListEntry) -> Issue | None:
         return None
     return Issue("punctuation_only", Severity.WARN, "Punctuation or digits only")
 
-
 ALL_CHECKS = [
     check_empty_text,
     check_too_short,
@@ -78,6 +80,7 @@ ALL_CHECKS = [
     check_too_long,
     check_punctuation_only,
 ]
+
 
 def inspect(entry: ListEntry, checks=ALL_CHECKS) -> list[Issue]:
     return [issue for check in checks if (issue := check(entry)) is not None]
