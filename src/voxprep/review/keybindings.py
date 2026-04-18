@@ -4,6 +4,7 @@ from typing import Callable
 
 from voxprep.review.player import AudioPlayer
 from voxprep.review.editor import TextEditor
+from voxprep.review.confirmer import Confirmer
 
 class ReviewOutcome(Enum):
     CONTINUE = "continue"
@@ -26,6 +27,7 @@ class Dispatcher:
 def build_default_dispatcher(
     player: AudioPlayer | None = None,
     editor: TextEditor | None = None,
+    confirmer: Confirmer | None = None,
 ) -> Dispatcher:
     d = Dispatcher()
     d.register("n", lambda s: (s.next(), ReviewOutcome.CONTINUE)[1])
@@ -45,4 +47,17 @@ def build_default_dispatcher(
                 s.save()
             return ReviewOutcome.CONTINUE
         d.register("e", _edit_action)
+    if confirmer is not None:
+        def _delete_action(s):
+            if s.is_empty():
+                return ReviewOutcome.CONTINUE
+            if confirmer.confirm(f"Delete '{s.current().text}'?"):
+                s.delete_current()
+                s.save()
+            return ReviewOutcome.CONTINUE
+        d.register("d", _delete_action)
+    d.register("u", lambda s: (
+        (s.undo(), s.save()) if s.can_undo() else None,
+        ReviewOutcome.CONTINUE,
+    )[-1])
     return d

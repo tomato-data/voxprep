@@ -86,3 +86,64 @@ def test_save_writes_to_disk_and_clears_dirty(tmp_path):
     assert not session.dirty
     content = (tmp_path / "x.list").read_text(encoding="utf-8")
     assert "새 텍스트" in content
+
+
+def test_delete_middle_entry_keeps_cursor(tmp_path):
+    session = ReviewSession(list_path=tmp_path / "x.list", entries=[_entry("a"), _entry("b"), _entry("c")])
+    session.next()
+
+    session.delete_current()
+
+    assert [e.audio_path for e in session.entries] == ["a.wav", "c.wav"]
+    assert session.cursor == 1
+    assert session.current().audio_path == "c.wav"
+    assert session.dirty
+
+
+def test_delete_last_entry_moves_cursor_back(tmp_path):
+    session = ReviewSession(list_path=tmp_path / "x.list", entries=[_entry("a"), _entry("b"), _entry("c")])
+    session.next()
+    session.next()
+
+    session.delete_current()
+
+    assert session.cursor == 1
+    assert session.current().audio_path == "b.wav"
+
+
+def test_delete_only_entry_makes_session_empty(tmp_path):
+    session = ReviewSession(list_path=tmp_path / "x.list", entries=[_entry("a")])
+    
+    session.delete_current()
+
+    assert session.entries == []
+    assert session.is_empty()
+
+
+def test_undo_restores_deleted_entry(tmp_path):
+    session = ReviewSession(list_path=tmp_path / "x.list", entries=[_entry("a"), _entry("b"), _entry("c")])
+    session.next()
+    session.delete_current()
+
+    restored = session.undo()
+
+    assert restored is True
+    assert [e.audio_path for e in session.entries] == ["a.wav", "b.wav", "c.wav"]
+    assert session.cursor == 1
+
+
+def test_undo_only_one_step(tmp_path):
+    session = ReviewSession(list_path=tmp_path / "x.list", entries=[_entry("a"), _entry("b")])
+    session.delete_current()
+    session.undo()
+
+    assert session.undo() is False
+
+
+def test_undo_after_edit(tmp_path):
+    session = ReviewSession(list_path=tmp_path / "x.list", entries=[_entry("a")])
+    session.update_current_text("changed")
+
+    session.undo()
+
+    assert session.current().text == "a"

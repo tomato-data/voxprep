@@ -10,6 +10,7 @@ class ReviewSession:
         self.entries = entries
         self.cursor = 0
         self.dirty = False
+        self._undo_snapshot = None
 
     def current(self) -> ListEntry:
         return self.entries[self.cursor]
@@ -27,11 +28,36 @@ class ReviewSession:
     def prev(self) -> None:
         if not self.is_at_start():
             self.cursor -= 1
-
-    def update_current_text(self, new_text: str) -> None:
-        self.entries[self.cursor] = replace(self.entries[self.cursor], text=new_text)
-        self.dirty = True
         
     def save(self) -> None:
         write_list_file(self.list_path, self.entries)
         self.dirty = False
+
+    def _save_snapshot(self) -> None:
+        self._undo_snapshot = (list(self.entries), self.cursor)
+
+    def delete_current(self) -> None:
+        self._save_snapshot()
+        del self.entries[self.cursor]
+        if self.cursor >= len(self.entries) and self.cursor > 0:
+            self.cursor -= 1
+        self.dirty = True
+
+    def update_current_text(self, new_text: str) -> None:
+        self._save_snapshot()
+        self.entries[self.cursor] = replace(self.entries[self.cursor], text=new_text)
+        self.dirty = True
+
+    def undo(self) -> bool:
+        if self._undo_snapshot is None:
+            return False
+        self.entries, self.cursor = self._undo_snapshot
+        self._undo_snapshot = None
+        self.dirty = True
+        return True
+    
+    def can_undo(self) -> bool:
+        return self._undo_snapshot is not None
+    
+    def is_empty(self) -> bool:
+        return len(self.entries) == 0
