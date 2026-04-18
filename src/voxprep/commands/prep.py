@@ -4,27 +4,24 @@ import typer
 
 from voxprep.pipeline.workspace import Workspace
 from voxprep.pipeline.runner import slice_step, asr_step, review_step
-from voxprep.slicing.slicer import Slicer
+from voxprep.slicing.options import SliceOptions
+from voxprep.transcription.options import AsrOptions
 from voxprep.transcription.whisper import WhisperTranscriber
 from voxprep.transcription.model_factory import load_whisper
 
 
-def _build_transcriber(
-        model_size: str = "large-v3-turbo",
-        device: str = "auto",
-        compute_type: str = "auto",
-        language: str = "ko",
-        beam_size: int = 5,
-        vad_filter: bool = True,
-        vad_min_silence_ms: int = 700,
-) -> WhisperTranscriber:
-    model = load_whisper(model_size=model_size, device=device, compute_type=compute_type)
+def _build_transcriber(options: AsrOptions) -> WhisperTranscriber:
+    model = load_whisper(
+        model_size=options.model_size,
+        device=options.device,
+        compute_type=options.compute_type,
+    )
     return WhisperTranscriber(
         model=model,
-        default_language=language,
-        beam_size=beam_size,
-        vad_filter=vad_filter,
-        vad_min_silence_ms=vad_min_silence_ms,
+        default_language=options.language,
+        beam_size=options.beam_size,
+        vad_filter=options.vad_filter,
+        vad_min_silence_ms=options.vad_min_silence_ms,
     )
 
 
@@ -54,26 +51,29 @@ help="Directory containing raw audio files"),
     ws = Workspace(root=workspace)
     ws.ensure_root()
 
-    slicer = Slicer(
-        sr=sample_rate,
+    slice_options = SliceOptions(
+        sample_rate=sample_rate,
         threshold=threshold,
         min_length=min_length,
         min_interval=min_interval,
         hop_size=hop_size,
         max_sil_kept=max_sil_kept,
+        max_amp=max_amp,
+        alpha=alpha,
     )
-    slice_step(workspace=ws, raw_dir=raw_audio, slicer=slicer, max_amp=max_amp, alpha=alpha)
+    slice_step(workspace=ws, raw_dir=raw_audio, options=slice_options)
 
-    transcriber = _build_transcriber(
+    asr_options = AsrOptions(
+        language=language,
         model_size=model_size,
         device=device,
         compute_type=compute_type,
-        language=language,
         beam_size=beam_size,
         vad_filter=vad,
         vad_min_silence_ms=vad_min_silence_ms,
     )
-    asr_step(workspace=ws, transcriber=transcriber, speaker=speaker)
+    transcriber = _build_transcriber(asr_options)
+    asr_step(workspace=ws, transcriber=transcriber, speaker=speaker, options=asr_options)
 
     review_step(workspace=ws, skip_review=skip_review)
 

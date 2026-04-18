@@ -4,7 +4,7 @@ from pathlib import Path
 
 from voxprep.pipeline.workspace import Workspace
 from voxprep.pipeline.runner import slice_step, asr_step, review_step
-from voxprep.slicing.slicer import Slicer
+from voxprep.slicing.options import SliceOptions
 from voxprep.transcription.whisper import WhisperTranscriber
 from voxprep.cli import app
 
@@ -26,7 +26,7 @@ def test_slice_step_runs_when_chunks_dir_empty(tmp_path):
     ws = Workspace(root=tmp_path / "ws")
     ws.ensure_root()
 
-    slice_step(workspace=ws, raw_dir=raw, slicer=Slicer(sr=16000, min_length=500))
+    slice_step(workspace=ws, raw_dir=raw, options=SliceOptions(sample_rate=16000, min_length=500))
 
     chunks = sorted(ws.chunks_dir.glob("x_*.wav"))
     assert len(chunks) >= 2
@@ -40,7 +40,7 @@ def test_slice_step_skips_when_chunks_exist(tmp_path):
     raw = tmp_path / "raw"
     raw.mkdir()
 
-    slice_step(workspace=ws, raw_dir=raw, slicer=Slicer(sr=16000), skip_if_exists=True)
+    slice_step(workspace=ws, raw_dir=raw, options=SliceOptions(sample_rate=16000), skip_if_exists=True)
 
     assert (ws.chunks_dir / "existing.wav").exists()
 
@@ -77,7 +77,7 @@ def test_review_step_creates_final_from_draft_when_missing(tmp_path):
 def test_prep_command_end_to_end(tmp_path, monkeypatch):
     monkeypatch.setattr(
         "voxprep.commands.prep._build_transcriber",
-        lambda **kwargs: WhisperTranscriber(model=FakeWhisperModel(["test"], "en")),
+        lambda options: WhisperTranscriber(model=FakeWhisperModel(["test"], "en")),
     )
 
     raw = tmp_path / "raw"
