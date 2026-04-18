@@ -6,6 +6,7 @@ import typer
 from rich.console import Console
 
 from voxprep.extract.models_path import ModelsPaths
+from voxprep.inference.ref_picker import RefCandidate, rank_candidates
 from voxprep.inference.session import InferenceInputs, InferenceSession
 from voxprep.training.config_builder import gpt_weights_dir, sovits_weights_dir
 
@@ -40,19 +41,46 @@ def _play(path: Path) -> None:
         subprocess.Popen(["aplay", str(path)])
 
 
+def _pick_candidate(console: Console, items: list[RefCandidate]) -> RefCandidate:
+    if not items:
+        raise typer.Exit("no reference candidates found in list (need 4-8s duration, 15-50 char text)")
+    console.print("\n[bold]Reference audio candidates:[/bold]")
+    for i, c in enumerate(items, 1):
+        console.print(f"  [{i}] [{c.duration:4.1f}s] {c.text!r}")
+    while True:
+        choice = typer.prompt(f"Select [1-{len(items)}]", default="1")
+        try:
+            idx = int(choice) - 1
+            if 0 <= idx < len(items):
+                return items[idx]
+        except ValueError:
+            pass
+        console.print("[red]invalid[/red]")
+
+
 def infer_command(
     sovits_weights: Path = typer.Option(None, "--sovits", help="SoVITS .pth (overrides picker)"),
     gpt_weights: Path = typer.Option(None, "--gpt", help="GPT .ckpt (overrides picker)"),
     version: str = typer.Option("v2Pro"),
     models_root: Path = typer.Option(None, "--models-root"),
-    ref_audio: Path = typer.Option(None, "--ref-audio", help="Reference audio (3-10 seconds)"),
-    ref_text: str = typer.Option("", "--ref-text", help="Transcript of reference audio"),
+    ref_audio: Path = typer.Option(None, "--ref-audio", help="Explicit reference audio path"),
+    ref_text: str = typer.Option("", "--ref-text", help="Transcript of --ref-audio"),
+    ref_list: Path = typer.Option(None, "--ref-list", exists=True, dir_okay=False,
+                                  help=".list file to auto-pick reference from"),
+    autoselect: bool = typer.Option(False, "--autoselect",
+                                    help="Auto-pick best candidate from --ref-list (no prompt)"),
     ref_lang: str = typer.Option("ko", "--ref-lang"),
     text_lang: str = typer.Option("ko", "--text-lang"),
     output_dir: Path = typer.Option(None, "--output-dir", help="Where to save synthesized wavs (default: ./infer_out)"),
     no_play: bool = typer.Option(False, "--no-play", help="Disable auto-playback"),
 ) -> None:
-    """Interactive inference session: type text, hear voice."""
+    """Interactive inference session: type text, hear voice.
+
+    Reference audio selection — three modes:
+      (1) --ref-audio X.wav --ref-text "..."   explicit
+      (2) --ref-list foo.list --autoselect     best candidate auto-picked
+      (3) --ref-list foo.list                  top 8 candidates shown, you pick
+    """
     console = Console()
     models = ModelsPaths(root=models_root)
 
@@ -62,7 +90,6 @@ def infer_command(
     if gpt_weights is None:
         g_list = _list_weights(gpt_weights_dir(models, version), ".ckpt")
         if not g_list:
-            # fallback to pretrained
             pretrained = models.gpt_pretrained(version)
             if pretrained.exists():
                 console.print(f"[yellow]no trained GPT found — using pretrained {pretrained.name}[/yellow]")
@@ -72,8 +99,22 @@ def infer_command(
         else:
             gpt_weights = _pick(console, f"GPT {version} weights", g_list)
 
+    if ref_audio is None and ref_list is None:
+        raise typer.Exit("either --ref-audio + --ref-text, or --ref-list [--autoselect] is required")
+
     if ref_audio is None:
-        ref_audio = Path(typer.prompt("Reference audio path"))
+        candidates = rank_candidates(ref_list, limit=8)
+        if autoselect:
+            if not candidates:
+                raise typer.Exit("no suitable reference candidates in list")
+            chosen = candidates[0]
+            console.print(f"[green]Auto-selected:[/green] [{chosen.duration:.1f}s] {chosen.text!r}")
+        else:
+            chosen = _pick_candidate(console, candidates)
+        ref_audio = chosen.audio_path
+        if not ref_text:
+            ref_text = chosen.text
+
     if not ref_text:
         ref_text = typer.prompt("Reference text")
 
