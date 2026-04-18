@@ -7,6 +7,7 @@ from voxprep.commands.review import review_command
 from voxprep.commands.prep import prep_command
 from voxprep.commands.extract import extract_command
 from voxprep.commands.train import train_app
+from voxprep.commands.infer import infer_command
 
 app = typer.Typer(help="voxprep — GPT-SoVITS preprocessing CLI")
 app.command(name="slice")(slice_command)
@@ -15,6 +16,7 @@ app.command(name="review")(review_command)
 app.command(name="prep")(prep_command)
 app.command(name="extract")(extract_command)
 app.add_typer(train_app, name="train")
+app.command(name="infer")(infer_command)
 
 @app.callback()
 def main() -> None:
