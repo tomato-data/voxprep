@@ -31,6 +31,10 @@ def _run_sovits(
     models: ModelsPaths,
     console: Console,
 ) -> None:
+    # Ensure the checkpoint subdir exists: {exp_dir}/logs_s2_{version}/
+    (opts.exp_dir / f"logs_s2_{opts.version}").mkdir(parents=True, exist_ok=True)
+    (opts.exp_dir / f"logs_s2_{opts.version}" / "eval").mkdir(parents=True, exist_ok=True)
+
     data = build_sovits_config(opts, models)
     temp_dir = models.root / "tmp"
     temp_dir.mkdir(parents=True, exist_ok=True)
@@ -45,6 +49,9 @@ def _run_gpt(
     models: ModelsPaths,
     console: Console,
 ) -> None:
+    # Ensure GPT output directory exists
+    (opts.exp_dir / f"logs_s1_{opts.version}").mkdir(parents=True, exist_ok=True)
+
     data = build_gpt_config(opts, models)
     temp_dir = models.root / "tmp"
     temp_dir.mkdir(parents=True, exist_ok=True)
