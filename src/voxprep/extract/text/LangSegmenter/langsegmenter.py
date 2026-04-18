@@ -5,10 +5,14 @@ import re
 import jieba
 jieba.setLogLevel(logging.CRITICAL)
 
-# 更改fast_langdetect大模型位置
+# fast_langdetect cache — resolved via ModelsPaths (voxprep convention)
 from pathlib import Path
 import fast_langdetect
-fast_langdetect.infer._default_detector = fast_langdetect.infer.LangDetector(fast_langdetect.infer.LangDetectConfig(cache_dir=Path(__file__).parent.parent.parent / "pretrained_models" / "fast_langdetect"))
+from voxprep.extract.models_path import ModelsPaths
+_fld_cache = ModelsPaths().root / "pretrained" / "fast_langdetect"
+fast_langdetect.infer._default_detector = fast_langdetect.infer.LangDetector(
+    fast_langdetect.infer.LangDetectConfig(cache_dir=_fld_cache)
+)
 
 
 from split_lang import LangSplitter

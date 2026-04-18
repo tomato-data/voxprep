@@ -37,3 +37,12 @@ models/
 
 # Training experiment outputs
 logs/
+
+# Inference outputs (generated wavs)
+infer_out/
+
+# Runtime artifacts that TTS_Config or other modules write at cwd
+/GPT_SoVITS/
+*.wav
+!tests/**/*.wav
+!docs/**/*.wav
