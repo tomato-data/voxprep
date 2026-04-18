@@ -7,7 +7,7 @@ from rich.console import Console
 from voxprep.parsing.list_file import read_list_file
 from voxprep.review.session import ReviewSession
 from voxprep.review.keybindings import build_default_dispatcher
-from voxprep.review.loop import run_review_loop
+from voxprep.review.loop import run_review_loop, run_auto_prune_loop
 from voxprep.review.player import SubprocessAudioPlayer
 from voxprep.review.editor import PromptToolkitTextEditor
 from voxprep.review.confirmer import PromptToolkitConfirmer
@@ -30,7 +30,7 @@ def _stdin_key_source():
 
 
 def review_command(
-    list_file: Path = typer.Argument(..., exists=True, dir_okay=False, help="Path to .list file"),
+    list_file: Path = typer.Argument(..., exists=True, dir_okay=False, help="Path to .list file"), auto_prune: bool = typer.Option(False, "--auto-prune", help="Auto-prune suspicious entries")
 ) -> None:
     """Interactively review ASR transcription results."""
     if not sys.stdin.isatty():
@@ -43,9 +43,15 @@ def review_command(
         raise typer.Exit(1)
 
     session = ReviewSession(list_path=list_file, entries=entries)
+    confirmer = PromptToolkitConfirmer()
+
+    if auto_prune:
+        run_auto_prune_loop(session, confirmer=confirmer)
+        typer.echo(f"Done. {len(session.entries)} entries remaining.")
+        return
+
     player = SubprocessAudioPlayer()
     editor = PromptToolkitTextEditor()
-    confirmer = PromptToolkitConfirmer()
     dispatcher = build_default_dispatcher(player=player, editor=editor, confirmer=confirmer)
     console = Console()
 
