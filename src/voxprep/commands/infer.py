@@ -69,8 +69,10 @@ def infer_command(
                                   help=".list file to auto-pick reference from"),
     autoselect: bool = typer.Option(False, "--autoselect",
                                     help="Auto-pick best candidate from --ref-list (no prompt)"),
-    ref_lang: str = typer.Option("ko", "--ref-lang"),
-    text_lang: str = typer.Option("ko", "--text-lang"),
+    ref_lang: str = typer.Option(None, "--ref-lang",
+                                 help="Reference audio language; auto-inferred from --ref-list entry"),
+    text_lang: str = typer.Option(None, "--text-lang",
+                                  help="Target text language; defaults to --ref-lang"),
     output_dir: Path = typer.Option(None, "--output-dir", help="Where to save synthesized wavs (default: ./infer_out)"),
     no_play: bool = typer.Option(False, "--no-play", help="Disable auto-playback"),
 ) -> None:
@@ -114,9 +116,15 @@ def infer_command(
         ref_audio = chosen.audio_path
         if not ref_text:
             ref_text = chosen.text
+        if ref_lang is None:
+            ref_lang = chosen.entry.language
 
     if not ref_text:
         ref_text = typer.prompt("Reference text")
+    if ref_lang is None:
+        ref_lang = typer.prompt("Reference language (zh/en/ja/ko/yue)", default="ko")
+    if text_lang is None:
+        text_lang = ref_lang
 
     out_dir = output_dir or Path.cwd() / "infer_out"
     out_dir.mkdir(parents=True, exist_ok=True)
