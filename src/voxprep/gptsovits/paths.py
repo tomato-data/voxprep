@@ -135,6 +135,16 @@ def resolve_root(cli_override: Path | None = None) -> Path:
     )
 
 
+def resolve_python(cli_override: str | None = None) -> str:
+    if cli_override:
+        return cli_override
+    env = os.environ.get("VOXPREP_GPT_SOVITS_PYTHON") or os.environ.get("GPT_SOVITS_PYTHON")
+    if env:
+        return env
+    import sys
+    return sys.executable
+
+
 def validate_version(version: str) -> None:
     if version not in SUPPORTED_VERSIONS:
         raise ValueError(

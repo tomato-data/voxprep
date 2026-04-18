@@ -3,7 +3,7 @@ from pathlib import Path
 import typer
 from rich.console import Console
 
-from voxprep.gptsovits.paths import GptSovitsPaths, resolve_root, validate_version
+from voxprep.gptsovits.paths import GptSovitsPaths, resolve_root, resolve_python, validate_version
 from voxprep.gptsovits.runner import run_script
 
 
@@ -37,11 +37,13 @@ def extract_command(
     is_half: bool = typer.Option(False, "--half/--no-half", help="Use fp16 (requires CUDA)"),
     gpu: str = typer.Option("0", help="CUDA device index; ignored on CPU"),
     skip_sv: bool = typer.Option(False, "--skip-sv", help="Skip speaker vector extraction (v2Pro only)"),
+    python_exec: str = typer.Option(None, "--python", help="Python executable with GPT-SoVITS deps (default: voxprep venv)"),
 ) -> None:
     """Run GPT-SoVITS feature extraction pipeline (text → HuBERT → semantic)."""
     validate_version(version)
     root = resolve_root(gpt_sovits_root)
     paths = GptSovitsPaths(root=root, version=version)
+    python = resolve_python(python_exec)
 
     console = Console()
     log_dir = paths.exp_log_dir(exp_name)
@@ -57,6 +59,7 @@ def extract_command(
             **base,
             "bert_pretrained_dir": str(paths.bert_dir),
         },
+        python_exec=python,
         console=console,
     )
 
@@ -69,6 +72,7 @@ def extract_command(
             "cnhubert_base_dir": str(paths.cnhubert_dir),
             "sv_path": str(paths.sv_ckpt),
         },
+        python_exec=python,
         console=console,
     )
 
@@ -82,6 +86,7 @@ def extract_command(
                 "cnhubert_base_dir": str(paths.cnhubert_dir),
                 "sv_path": str(paths.sv_ckpt),
             },
+            python_exec=python,
             console=console,
         )
 
@@ -94,6 +99,7 @@ def extract_command(
             "pretrained_s2G": str(paths.pretrained_s2g),
             "s2config_path": str(paths.s2_config_template),
         },
+        python_exec=python,
         console=console,
     )
 

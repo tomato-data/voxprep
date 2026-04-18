@@ -3,7 +3,7 @@ from pathlib import Path
 import typer
 from rich.console import Console
 
-from voxprep.gptsovits.paths import GptSovitsPaths, resolve_root, validate_version
+from voxprep.gptsovits.paths import GptSovitsPaths, resolve_root, resolve_python, validate_version
 from voxprep.gptsovits.runner import run_script
 from voxprep.gptsovits.config_builder import (
     SovitsTrainConfig,
@@ -22,6 +22,7 @@ def _run_sovits(
     paths: GptSovitsPaths,
     options: SovitsTrainConfig,
     console: Console,
+    python: str,
 ) -> None:
     data = build_sovits_config(paths, options)
     config_path = write_sovits_temp_config(paths, data)
@@ -42,6 +43,7 @@ def _run_sovits(
             "version": paths.version,
         },
         args=["--config", str(config_path)],
+        python_exec=python,
         console=console,
     )
 
@@ -50,6 +52,7 @@ def _run_gpt(
     paths: GptSovitsPaths,
     options: GptTrainConfig,
     console: Console,
+    python: str,
 ) -> None:
     data = build_gpt_config(paths, options)
     config_path = write_gpt_temp_config(paths, data)
@@ -66,6 +69,7 @@ def _run_gpt(
             "version": paths.version,
         },
         args=["--config_file", str(config_path)],
+        python_exec=python,
         console=console,
     )
 
@@ -80,11 +84,13 @@ def train_sovits(
     save_every: int = typer.Option(4, help="Save weight every N epochs"),
     is_half: bool = typer.Option(False, "--half/--no-half"),
     gpus: str = typer.Option("0", help="Comma-separated GPU indices"),
+    python_exec: str = typer.Option(None, "--python"),
 ) -> None:
     """Train the SoVITS (s2) model."""
     validate_version(version)
     root = resolve_root(gpt_sovits_root)
     paths = GptSovitsPaths(root=root, version=version)
+    python = resolve_python(python_exec)
     console = Console()
     options = SovitsTrainConfig(
         exp_name=exp_name,
@@ -94,7 +100,7 @@ def train_sovits(
         is_half=is_half,
         gpus=gpus,
     )
-    _run_sovits(paths, options, console)
+    _run_sovits(paths, options, console, python)
     typer.echo(f"Done. Weights in: {paths.sovits_weights_dir}")
 
 
@@ -109,11 +115,13 @@ def train_gpt(
     is_half: bool = typer.Option(False, "--half/--no-half"),
     gpus: str = typer.Option("0"),
     dpo: bool = typer.Option(False, "--dpo/--no-dpo", help="Enable DPO training"),
+    python_exec: str = typer.Option(None, "--python"),
 ) -> None:
     """Train the GPT (s1) model."""
     validate_version(version)
     root = resolve_root(gpt_sovits_root)
     paths = GptSovitsPaths(root=root, version=version)
+    python = resolve_python(python_exec)
     console = Console()
     options = GptTrainConfig(
         exp_name=exp_name,
@@ -124,7 +132,7 @@ def train_gpt(
         gpus=gpus,
         if_dpo=dpo,
     )
-    _run_gpt(paths, options, console)
+    _run_gpt(paths, options, console, python)
     typer.echo(f"Done. Weights in: {paths.gpt_weights_dir}")
 
 
@@ -140,11 +148,13 @@ def train_all(
     is_half: bool = typer.Option(False, "--half/--no-half"),
     gpus: str = typer.Option("0"),
     dpo: bool = typer.Option(False, "--dpo/--no-dpo"),
+    python_exec: str = typer.Option(None, "--python"),
 ) -> None:
     """Train SoVITS first, then GPT."""
     validate_version(version)
     root = resolve_root(gpt_sovits_root)
     paths = GptSovitsPaths(root=root, version=version)
+    python = resolve_python(python_exec)
     console = Console()
     _run_sovits(
         paths,
@@ -157,6 +167,7 @@ def train_all(
             gpus=gpus,
         ),
         console,
+        python,
     )
     _run_gpt(
         paths,
@@ -170,6 +181,7 @@ def train_all(
             if_dpo=dpo,
         ),
         console,
+        python,
     )
     typer.echo("Done.")
     typer.echo(f"  SoVITS weights: {paths.sovits_weights_dir}")
