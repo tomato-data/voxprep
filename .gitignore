@@ -34,3 +34,6 @@ Thumbs.db
 
 # Pretrained model weights (download separately)
 models/
+
+# Training experiment outputs
+logs/
