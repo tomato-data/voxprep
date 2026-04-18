@@ -1,4 +1,19 @@
-# Phase 15 — `infer` CLI 대화형 추론 세션
+# Phase 15 — `infer` CLI 대화형 추론 세션 (이식)
+
+## 기본 방침
+
+Phase 13/14와 동일. 추론 코드를 voxprep 안으로 **이식**. `voxprep/GPT-SoVITS/` 참조 금지.
+
+## 이식 대상
+
+| 원본 | voxprep 경로 | 설명 |
+|------|-------------|------|
+| `GPT_SoVITS/inference_webui.py`의 `get_tts_wav` | `src/voxprep/inference/synthesizer.py` | 핵심 추론 함수 |
+| `GPT_SoVITS/module/models.py`의 Generator (추론 부분) | `src/voxprep/inference/sovits.py` | VQ → mel |
+| `GPT_SoVITS/AR/` (추론 경로) | `src/voxprep/inference/gpt.py` | 자기회귀 추론 |
+| Vocoder (v3/v4) | `src/voxprep/inference/vocoder.py` | mel → waveform |
+| `GPT_SoVITS/TTS_infer_pack/` | `src/voxprep/inference/pack/` | 추론 파이프라인 래퍼 |
+
 
 ## 사용자 시점
 
