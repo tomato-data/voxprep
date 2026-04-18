@@ -34,11 +34,12 @@ def build_default_dispatcher(
     d.register("b", lambda s: (s.prev(), ReviewOutcome.CONTINUE)[1])
     d.register("q", lambda s: ReviewOutcome.QUIT)
     if player is not None:
-        d.register("\r", lambda s: (
-            player.stop(),
-            player.play(Path(s.current().audio_path)),
-            ReviewOutcome.CONTINUE,
-        )[-1])
+        def _play_action(s):
+            player.stop()
+            player.play(Path(s.current().audio_path))
+            return ReviewOutcome.CONTINUE
+        d.register("\r", _play_action)
+        d.register("c-m", _play_action)
     if editor is not None:
         def _edit_action(s):
             new_text = editor.edit(s.current().text)

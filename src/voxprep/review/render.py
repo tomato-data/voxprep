@@ -22,6 +22,7 @@ def render_session(session: ReviewSession) -> Panel:
             body.append(f"  ⚠ {issue.code}: {issue.message}\n", style="bold yellow")
 
     body.append("\n")
-    body.append("  [n] next  [b] back  [q] quit", style="dim")
+    body.append("  [enter] play  [e] edit  [d] delete  [u] undo\n", style="dim")
+    body.append("  [n] next   [b] back  [q] quit", style="dim")
 
     return Panel(body, title=f"Review [{position}]", border_style="blue")
