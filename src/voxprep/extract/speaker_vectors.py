@@ -10,8 +10,10 @@ import traceback
 from pathlib import Path
 from time import time as _now
 
+import numpy as np
 import torch
 import torchaudio
+from scipy.io import wavfile
 
 from voxprep.extract.eres2net.ERes2NetV2 import ERes2NetV2
 from voxprep.extract.eres2net import kaldi as Kaldi
@@ -85,9 +87,19 @@ def extract_speaker_vectors(
             if target.exists():
                 continue
             wav_path = wav32_dir / wav_name
-            wav32k, sr = torchaudio.load(str(wav_path))
+            sr, data = wavfile.read(str(wav_path))
             assert sr == 32000, f"expected 32kHz, got {sr} for {wav_path}"
-            wav32k = wav32k.to(device)
+            if data.dtype == np.int16:
+                data_f = data.astype(np.float32) / 32768.0
+            elif data.dtype == np.int32:
+                data_f = data.astype(np.float32) / 2147483648.0
+            else:
+                data_f = data.astype(np.float32)
+            if data_f.ndim == 1:
+                data_f = data_f[None, :]  # (1, T)
+            else:
+                data_f = data_f.T  # (C, T)
+            wav32k = torch.from_numpy(data_f).to(device)
             emb = encoder.embed(wav32k).cpu()
             _safe_torch_save(emb, target)
             if progress_cb is not None:
