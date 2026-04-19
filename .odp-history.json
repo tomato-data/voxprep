@@ -1,0 +1,62 @@
+{
+  "reviews": [
+    {
+      "date": "2026-04-19",
+      "target": "src/voxprep/ (voxprep-native only; ported code excluded)",
+      "files_reviewed": 19,
+      "classes_reviewed": 25,
+      "violations": {
+        "CRITICAL": 12,
+        "HIGH": 18,
+        "MEDIUM": 9
+      },
+      "top_violations": [
+        { "rule": "svc-all-args-required", "count": 6 },
+        { "rule": "method-information-hiding", "count": 5 },
+        { "rule": "obj-require-minimum-data", "count": 4 },
+        { "rule": "obj-require-meaningful-data", "count": 4 },
+        { "rule": "svc-explicit-deps", "count": 4 },
+        { "rule": "method-exception-naming", "count": 3 },
+        { "rule": "obj-named-constructors", "count": 3 },
+        { "rule": "method-cqs-separation", "count": 1 },
+        { "rule": "svc-immutable-after-creation", "count": 1 },
+        { "rule": "svc-constructor-assign-only", "count": 2 },
+        { "rule": "method-single-return-type", "count": 3 },
+        { "rule": "mut-valid-state-transition", "count": 1 }
+      ],
+      "waivers": [
+        { "rule": "method-single-return-type", "reason": "Python convention accepts Optional[T]; Phase docs reason documented" },
+        { "rule": "obj-dto-exception", "reason": "Typer handles CLI boundary; no explicit DTOs needed" },
+        { "rule": "arch-separate-read-write", "reason": "voxprep scope too small for CQRS split" },
+        { "rule": "arch-event-driven-read", "reason": "no domain events yet; Phase 16/17 may introduce" },
+        { "rule": "svc-method-arg-for-task", "reason": "WhisperTranscriber.default_language is config, not task data" }
+      ],
+      "scope_excluded": [
+        "src/voxprep/extract/module/ (ported from GPT-SoVITS)",
+        "src/voxprep/extract/text/ (ported)",
+        "src/voxprep/extract/eres2net/ (ported)",
+        "src/voxprep/extract/feature_extractor/ (ported)",
+        "src/voxprep/training/AR/ (ported)",
+        "src/voxprep/training/s1_train.py, s2_train.py (ported)",
+        "src/voxprep/training/utils.py, process_ckpt.py (ported)",
+        "src/voxprep/training/i18n/ (ported)",
+        "src/voxprep/inference/tts_pack/ (ported)"
+      ],
+      "plan": "docs/phases/phase19-odp-refinement.md"
+    }
+  ],
+  "recurring": {
+    "svc-all-args-required": { "total": 6, "last_seen": "2026-04-19" },
+    "method-information-hiding": { "total": 5, "last_seen": "2026-04-19" },
+    "obj-require-meaningful-data": { "total": 4, "last_seen": "2026-04-19" },
+    "obj-require-minimum-data": { "total": 4, "last_seen": "2026-04-19" },
+    "svc-explicit-deps": { "total": 4, "last_seen": "2026-04-19" },
+    "method-exception-naming": { "total": 3, "last_seen": "2026-04-19" },
+    "obj-named-constructors": { "total": 3, "last_seen": "2026-04-19" },
+    "method-single-return-type": { "total": 3, "last_seen": "2026-04-19" },
+    "svc-constructor-assign-only": { "total": 2, "last_seen": "2026-04-19" },
+    "method-cqs-separation": { "total": 1, "last_seen": "2026-04-19" },
+    "svc-immutable-after-creation": { "total": 1, "last_seen": "2026-04-19" },
+    "mut-valid-state-transition": { "total": 1, "last_seen": "2026-04-19" }
+  }
+}
