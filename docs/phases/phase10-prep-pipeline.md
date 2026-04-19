@@ -24,7 +24,7 @@
 
 ```bash
 # 가장 짧은 형태 — 모든 옵션이 SETUP_GUIDE 검증 기본값
-# 한국어 ASMR + macOS Apple Silicon이 voxprep의 1차 가정이라 거의 인자 없이 동작
+# Korean voice + macOS Apple Silicon이 voxprep의 1차 가정이라 거의 인자 없이 동작
 voxprep prep ./raw_audio --workspace ./datasets/myvoice --speaker myvoice
 
 # 전체 노브 노출 (Phase 03/04 옵션 그대로 forward, 기본값 모두 SETUP_GUIDE 일치)
@@ -49,7 +49,7 @@ voxprep prep ./raw_audio \
   --skip-review
 ```
 
-> **기본값 출처**: 모두 `voxprep/GPT-SoVITS/docs/ko/SETUP_GUIDE.md`. 사용자가 한국어 ASMR 데이터셋으로 직접 검증한 값이라 인자 없이 호출해도 그대로 동작해야 합니다.
+> **기본값 출처**: 모두 `voxprep/GPT-SoVITS/docs/ko/SETUP_GUIDE.md`. 사용자가 Korean voice 데이터셋으로 직접 검증한 값이라 인자 없이 호출해도 그대로 동작해야 합니다.
 
 > **원칙**: prep은 slice 옵션과 asr 옵션을 **모두** 그대로 노출합니다 (Phase 03/04와 같은 기본값). 옵션 폭발이 보이지만 1차 GREEN에서는 그대로 갑니다 — 회고에서 `--config myvoice.toml` 도입 신호 점검.
 

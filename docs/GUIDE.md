@@ -98,28 +98,28 @@ voxprep extract --models-root /path/to/models ...
 
 ## 3. 워크플로우 — 끝에서 끝까지
 
-아래는 "noir" 라는 한국어 ASMR 데이터셋을 `noir_v1` 이라는 실험 이름으로 학습·추론하는 시나리오입니다.
+아래는 Korean voice 샘플을 `demo_v1` 이라는 실험 이름으로 학습·추론하는 시나리오입니다.
 
 ### 0. 원본 준비 — 영상 → WAV
 
 ```bash
-python3 utils/extract_wav.py /path/to/noir-yandere.mp4
-# → /path/to/noir-yandere.wav  (44100Hz, mono, PCM s16le)
+python3 utils/extract_wav.py /path/to/source.mp4
+# → /path/to/source.wav  (44100Hz, mono, PCM s16le)
 ```
 
 이후 단일 파일 또는 디렉토리를 voxprep 에 넘깁니다. voxprep은 **디렉토리** 단위로 받으므로 wav 파일들을 한 폴더에 모아둡니다:
 
 ```bash
-mkdir -p ~/Desktop/asmr_test
-mv /path/to/noir-yandere.wav ~/Desktop/asmr_test/
+mkdir -p ~/Desktop/raw_audio
+mv /path/to/source.wav ~/Desktop/raw_audio/
 ```
 
 ### 1~3. prep — slice + asr + review 한 번에
 
 ```bash
-uv run voxprep prep ~/Desktop/asmr_test/ \
+uv run voxprep prep ~/Desktop/raw_audio/ \
   --workspace ~/Desktop/datasets/test \
-  --speaker noir \
+  --speaker demo \
   --sample-rate 44100 \
   --skip-review       # 검수는 별도 단계에서
 ```
@@ -163,7 +163,7 @@ uv run voxprep review ~/Desktop/datasets/test/final.list --auto-prune
 uv run voxprep extract \
   --list-file ~/Desktop/datasets/test/final.list \
   --wav-dir ~/Desktop/datasets/test/chunks \
-  --exp-name noir_v1 \
+  --exp-name demo_v1 \
   --version v2Pro
 ```
 
@@ -173,7 +173,7 @@ uv run voxprep extract \
 3. 화자 벡터 (v2Pro/v2ProPlus 만)
 4. 시맨틱 토큰 (VQ 양자화)
 
-산출물 (`logs/noir_v1/`):
+산출물 (`logs/demo_v1/`):
 ```
 2-name2text.txt        # 음소 + word2ph + 정규화 텍스트
 3-bert/*.pt            # BERT 임베딩 (중국어만)
@@ -187,13 +187,13 @@ uv run voxprep extract \
 
 ```bash
 uv run voxprep train sovits \
-  --exp-name noir_v1 \
+  --exp-name demo_v1 \
   --epochs 12 --save-every 4
 ```
 
 > **epochs 는 save-every 의 배수로**. 마지막 epoch 가 저장 주기에 맞지 않으면 그 epoch 가 버려집니다. 예: `--epochs 10 --save-every 4` 면 epoch 10 은 저장 안 됨.
 
-산출물: `models/trained/SoVITS_weights_v2Pro/noir_v1_eN_sM.pth`.
+산출물: `models/trained/SoVITS_weights_v2Pro/demo_v1_eN_sM.pth`.
 
 macOS CPU 기준 epoch 당 약 4~5 분.
 
@@ -201,16 +201,16 @@ macOS CPU 기준 epoch 당 약 4~5 분.
 
 ```bash
 uv run voxprep train gpt \
-  --exp-name noir_v1 \
+  --exp-name demo_v1 \
   --epochs 20 --save-every 4
 ```
 
-SoVITS 와 달리 PyTorch Lightning 기반. 산출물: `models/trained/GPT_weights_v2Pro/noir_v1-eN.ckpt`.
+SoVITS 와 달리 PyTorch Lightning 기반. 산출물: `models/trained/GPT_weights_v2Pro/demo_v1-eN.ckpt`.
 
 ### 5+6 한 번에
 ```bash
 uv run voxprep train all \
-  --exp-name noir_v1 \
+  --exp-name demo_v1 \
   --sovits-epochs 12 --gpt-epochs 20 --save-every 4
 ```
 
@@ -297,7 +297,7 @@ voxprep extract
 
 ### `voxprep train sovits|gpt|all`
 ```
-voxprep train all --exp-name noir_v1
+voxprep train all --exp-name demo_v1
   --version v2Pro
   --sovits-epochs 12 --gpt-epochs 20
   --batch-size 1 --save-every 4

@@ -2,213 +2,282 @@
 
 [![English](https://img.shields.io/badge/lang-English-blue)](README.md)
 
-> GPT-SoVITS 데이터셋 전처리 CLI, **없었던 `review` 단계까지 함께** — `slice → asr → review → prep` 루프를 터미널에서 실제로 쓸 만한 물건으로 만들기 위해 TDD로 다시 짠 프로젝트입니다.
+> GPT-SoVITS의 전 라이프사이클(**전처리 → 특징 추출 → 학습 → 추론**)을 하나의 CLI로. 업스트림에는 없는 **대화형 `review` 단계**와 함께.
 
-> [GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS) (MIT) 위에 올라간 프로젝트입니다. 학습·추론은 원본이 맡고, voxprep은 그 앞단의 전처리 루프만 다시 짓습니다.
+> [GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS) (MIT) 위에 빌드한 프로젝트입니다. 전처리 루프는 TDD + ODP로 처음부터 다시 짓고, 특징 추출·학습·추론은 업스트림 모듈을 패키지 안으로 이식해 한 CLI 안에 묶었습니다.
 
 ## Highlights
 
-- **GPT-SoVITS에 없는 `review` 단계** — ASR 결과를 사람이 검수하는 대화형 TUI. 인라인 편집, 삭제/undo, 문제 있는 줄 자동 플래그(빈 텍스트·감탄사·짧은 잡음) 포함
-- **제대로 된 CLI 루프** — `slice → asr → review → prep`을 터미널에서 조합 가능. 브라우저 불필요, WebUI 드롭다운 대신 합리적 기본값
-- **열 개의 Phase를 하나씩** — 엄격한 Red-Green-Refactor 사이클. 모든 패턴은 구체적인 Force가 요구할 때만 도입됩니다
-- **macOS Apple Silicon을 일차 환경으로** — 기본값(`--language ko`, `--model-size large-v3-turbo`, CTranslate2용 CPU)은 WebUI 기본값이 아니라 제가 실제로 쓰는 환경을 반영합니다
-- **AI 활용, 사용자 직접 타이핑** — Claude는 튜터, 저는 `src/voxprep/**`와 `tests/**`의 모든 줄을 손으로 타이핑. Q&A와 함정은 [`learnings/`](learnings/)에 실시간으로 누적
+- **GPT-SoVITS에 없는 `review` 단계** — ASR 결과를 사람이 검수하는 키보드 중심 TUI. 인라인 오디오 재생(Enter), 인라인 편집(`e`), 삭제/undo(`d`/`u`), 그리고 자동 플래그(빈 텍스트·감탄사·비한글 잡음·3글자 이하 등)
+- **GPT-SoVITS에 없는 참조 오디오 자동 선택** — `voxprep infer` 가 `.list` 파일을 읽어 후보를 점수화합니다. 지속 시간(4~8초), 텍스트 길이(15~50자), 문장 완결성 기준. `--autoselect` 로 최상 1개 바로 지정, 생략 시 상위 8개를 대화형으로 선택. 언어 코드도 `.list` 엔트리에서 자동 추출
+- **전 라이프사이클이 하나의 CLI 안에** — `slice → asr → review → prep → extract → train → infer` 전부 터미널에서 조합 가능. 브라우저 불필요. 업스트림이 노출하는 모든 노브는 `--flag` 로 그대로 접근 가능하며, 프로젝트 단위 기본값을 한 번에 지정하는 설정 파일도 계획됩니다 ([Phase 20](docs/phases/phase20-config-file.md))
+- **검증된 기본값** — macOS Apple Silicon + 한국어 음성을 일차 환경으로 가정한 기본값(`--language ko`, `--model-size large-v3-turbo`, CTranslate2용 CPU 폴백). WebUI 기본값이 아니라 엔드 투 엔드로 실제 검증된 값을 그대로 반영
+- **자체 완결** — 특징 추출·학습·추론이 GPT-SoVITS 레포를 subprocess 로 호출하지 않습니다. 필요한 모듈(`AR/`, `module/`, `TTS_infer_pack/`, `text/`, `eres2net/`)을 `src/voxprep/{extract,training,inference}/` 로 이식해서, 외부 의존성은 사전훈련 가중치 파일뿐
+- **전처리는 손으로 구축, ML 코어는 이식** — Phase 01~10(전처리)은 튜터 모드에서 실패 테스트 한 번에 하나씩 손으로 타이핑. VITS + GPT 디코더를 처음부터 다시 쓰는 건 이 프로젝트의 목표가 아니었으므로 Phase 13~15(ML 파이프라인)는 업스트림에서 바로 이식해서 최소 수정만 적용.
 
-> **현재 진행 상황**: Phase 02 진행 중. `version` 커맨드는 동작합니다. `.list` 파서는 시나리오 D/7까지 완료(수동 `__eq__`/`__hash__`로 구현한 Value Object, 커스텀 예외 포함). 나머지 CLI는 아직 계약(contract)입니다 — [로드맵](#로드맵--10-phase)에서 예정된 내용을 확인하세요.
+> **현재 진행 상황**: Phase 01~15 완료. macOS에서 전 파이프라인이 엔드 투 엔드로 돌아갑니다. 남은 로드맵: 진행률 표시(11), `to-wav` 유틸(12), tkinter GUI(16), MCP/REST 서버(17), review 루프 통합(18), ODP 정제(19), 설정 파일 지원(20).
+
+엔드 투 엔드 사용법은 [**`docs/GUIDE.md`**](docs/GUIDE.md), 객체 디자인 전체 지도는 [**`docs/ARCHITECTURE.md`**](docs/ARCHITECTURE.md).
 
 ---
 
 ## 왜 만들었나
 
-GPT-SoVITS는 음성 합성 모델을 학습시키는 데 필요한 모든 것을 제공합니다 — **반복적인 데이터셋 작업을 견딜 만하게 만들어 주는 전처리 프런트엔드**만 빼고요. 원본은 WebUI와 반(半)독립적인 스크립트들(`slicer2.py`, `fasterwhisper_asr.py`, `1-get-text.py`)로 구성되어 있고, 각자 버튼·드롭다운·가정을 따로 가지고 있습니다.
+GPT-SoVITS는 훌륭히 음성 합성 모델을 학습시키는 데 필요한 모든 것을 제공하지만, 실제로 쓰려고 해보면 WebUI와 반(半)독립적인 스크립트들(`slicer2.py`, `fasterwhisper_asr.py`, `1-get-text.py`)로 조각나 있어 각자의 버튼·드롭다운·가정을 따로 알아야 했습니다.
 
-실제로 쓰면서 반복적으로 부딪힌 마찰 두 가지:
+반복적으로 부딪힌 마찰 두 가지:
 
-1. **CLI 루프가 깨져 있다.** 파일 한 배치에 대해 `slice → asr → review → prep`을 돌리려고 브라우저를 열 이유가 없습니다. 기존 도구는 탭 전환을 계속 요구하고, 조합이 안 되고, 기본값이 참조 구성에 맞춰져 있어 매번 같은 플래그를 다시 입력해야 합니다.
-2. **`review` 단계가 아예 없다.** Whisper의 ASR 결과는 `.list` 파일(`audio_path|speaker|language|text`)로 떨어지고, 이걸 어떻게 편집해야 할까요? `vim`으로 수백 줄을 스크롤하면서 `|` 구분자를 깨뜨리지 않기를 기도하면서? 놓친 ASR 오인식은 학습이 한참 진행된 뒤에야 드러납니다.
+1. **CLI 루프가 깨져 있다.** 한 배치에 대해 `slice → asr → review → prep` 을 돌리려고 브라우저를 열 이유가 없습니다. 기존 도구는 탭 전환을 계속 요구하고, 조합이 매끄럽지 않고, 기본값이 참조 구성에 맞춰져 있어 매번 같은 플래그를 다시 설정해야 합니다.
+2. **`review` 단계가 아예 없다.** Whisper 의 ASR 결과는 `.list` 파일(`audio_path|speaker|language|text`)로 떨어지는데 이를 편집할 환경이 제공되지 않습니다. `vim` 이나 여타 에디터로 수백 줄을 스크롤하면서 실제 음성을 듣고 텍스트를 고치는 환경이 있었으면 좋겠다고 생각했습니다.
 
-그래서 전처리 파이프라인을 제대로 된 CLI로 다시 짓고, **있었어야 할 `review` 단계를 직접 추가**합니다 — 키보드 중심, 인라인 오디오 재생, 인라인 편집, 삭제/undo, 문제 줄 자동 플래그까지.
+그래서 전처리 파이프라인을 제대로 된 CLI 로 다시 짓고, **`review` 단계를 직접 추가**합니다 — 키보드 중심, 인라인 오디오 재생, 인라인 편집, 삭제/undo, 문제 줄 자동 플래그까지. 또한 라이프사이클 전체가 한 CLI 안에 들어온 뒤로는 추론 시 참조 오디오를 매번 손으로 고르는 일도 마찰이 되어, **참조 오디오 자동 선택**도 함께 붙였습니다 — `.list` 엔트리의 지속 시간·텍스트 길이·문장 완결성을 점수화해 최상 후보 1개를 바로 지정(`--autoselect`)하거나 상위 8개를 대화형으로 보여주는 모드까지.
 
-실용 목적과 나란히, 이 프로젝트는 **TDD Red-Green-Refactor**(Kent Beck)와 **Object Design Practices**(Matthias Noback의 46규칙)를 체화하는 자리이기도 합니다. 모든 줄은 실패하는 테스트를 먼저 거치고, 모든 패턴은 Force로 정당화된 뒤에야 도입되며, 중요한 모든 결정은 [`learnings/DISCOVERIES.md`](learnings/DISCOVERIES.md)에 근거와 함께 기록됩니다.
-
----
-
-## 어떻게 학습하나
-
-```
-1. Phase 가이드 읽기 (docs/phases/phaseNN-*.md) — 범위 + 학습 목표
-       ↓
-2. 해당 Phase가 리라이트하는 GPT-SoVITS 원본 코드 읽기 (예: tools/slicer2.py)
-       ↓
-3. Claude가 RED 테스트 스니펫 제공, 저는 tests/에 직접 타이핑
-       ↓
-4. RED 진화 관찰:
-   ModuleNotFoundError → ImportError → AttributeError → AssertionError
-       ↓
-5. GREEN으로 가는 최소 코드 — 섣부른 추상화 금지, if/else도 괜찮음
-       ↓
-6. REFACTOR 게이트 — 테스트 품질, 코드 냄새, ODP 분류, 패턴 신호
-       ↓
-7. learnings/phaseNN-qa.md에 Q&A, learnings/DISCOVERIES.md에 발견 기록
-       ↓
-8. Tidy First 커밋 분리 — feat: / refactor: / docs: / chore:
-```
-
-> **코드는 제 것, Claude는 튜터입니다.** `src/voxprep/`와 `tests/`의 모든 줄을 손으로 타이핑합니다. Claude는 인프라와 문서 파일(`pyproject.toml`, `CLAUDE.md`, `docs/phases/*.md`)만 직접 작성합니다.
+이 프로젝트는 실용 목적과 함께 **TDD Red-Green-Refactor**(Kent Beck), **Tidy First** 커밋 분리, **Object Design Practices**(Matthias Noback 46규칙)를 체화하는 연습이기도 합니다. 전처리 Phase 는 실패 테스트부터 시작해 손으로 한 줄씩 구현했고, 모든 구조적 결정은 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) 에, ODP 재검토와 개선 계획은 [`docs/phases/phase19-odp-refinement.md`](docs/phases/phase19-odp-refinement.md) 에 기록해두었습니다.
 
 ---
 
-## 로드맵 — 10 Phase
+## 파이프라인 한눈에
 
-| # | Phase | 산출물 | 처음 등장하는 ODP 객체 | 상태 |
-|---|-------|--------|----------------------|------|
-| 01 | 부트스트랩 — Typer + pytest | `voxprep version` | *(아직 없음 — 어댑터만)* | ✅ |
-| 02 | `.list` 파서 | `ListEntry` + `read/write_list_file` | **Value Object** | 🔄 |
-| 03 | `slice` 커맨드 | `voxprep slice <in> <out>` | **Service** (`Slicer`) | ⏳ |
-| 04 | `asr` 커맨드 | `voxprep asr <dir>` | Service + DI + fake 더블 | ⏳ |
-| 05 | `review` — 내비게이션 | `voxprep review` (`n`/`b`/`q`) | **Entity** (커서 상태) | ⏳ |
-| 06 | `review` — 오디오 재생 | `Enter`로 재생 | subprocess seam | ⏳ |
-| 07 | `review` — 인라인 편집 | `e`로 편집 | prompt_toolkit `default=` | ⏳ |
-| 08 | `review` — 삭제 + undo | `d` / `u` | **Command** 패턴 도착 | ⏳ |
-| 09 | `review` — 자동 플래그 | `--auto-prune` 모드 | 규칙 집합 응집 | ⏳ |
-| 10 | `prep` 파이프라인 | `voxprep prep <raw>` | Rich Live 조합 | ⏳ |
+```
+[영상 / 원본 오디오]
+       │  (utils/extract_wav.py — ffmpeg)
+       ▼
+[원본 WAV]
+       │
+  voxprep prep ──▶  slice → asr → review
+       │                            │
+       │                            ▼
+       ▼                    logs/{exp}/final.list
+  chunks/*.wav                      │
+                                    ▼
+                           voxprep extract ──▶ BERT + HuBERT + 화자 벡터 + 시맨틱 토큰
+                                    │
+                                    ▼
+                           voxprep train {sovits, gpt, all}
+                                    │
+                                    ▼
+                           models/trained/{SoVITS,GPT}_weights_v2Pro/*.{pth,ckpt}
+                                    │
+                                    ▼
+                           voxprep infer ──▶  대화형 TTS 세션
+```
+
+각 화살표는 `uv run voxprep …` 한 커맨드. 각 디렉토리마다 계약이 문서화되어 있고, 필요시 skip/rerun 자동 판단.
+
+---
+
+## 어떻게 만들어졌나
+
+프로젝트는 두 저작 모드가 섞여 있습니다:
+
+**튜터 모드 (Phase 01~10)** — 전처리 + review. `src/voxprep/parsing/`, `slicing/`, `transcription/`, `review/`, `pipeline/` 의 모든 줄은 Claude 를 RED 사이클 튜터로 두고 제가 직접 타이핑했습니다. Claude 가 실패하는 테스트를 써주면 제가 타이핑해서 `ModuleNotFoundError → ImportError → AttributeError → AssertionError` 진화를 보고, 그 시점에서 GREEN 에 도달하는 최소 프로덕션 코드를 작성. REFACTOR 는 별도 커밋, ODP 로 분류, 섣부른 추상화 금지. Q&A 는 [`learnings/phaseNN-qa.md`](learnings/) 에 그때그때 기록.
+
+**이식 모드 (Phase 13~15)** — 특징 추출, 학습, 추론. 업스트림의 이 영역은 규모가 크고 이미 검증된 코드라, 처음부터 다시 쓰는 건 이 프로젝트의 목표가 아니었습니다. Claude 가 기계적 이식을 담당: 파일을 `src/voxprep/{extract,training,inference}/` 로 복사, `from text.X` → `from voxprep.extract.text.X` 로 import 재작성, 기존 엔트리 함수를 Typer 어댑터로 감싸기, 의존성 조정. 이식 경계는 명확히 유지해서 나중에 업스트림에서 다시 당겨오거나 격리하기 쉽게.
+
+---
+
+## 로드맵
+
+| Part | Phase | 산출물 | 상태 |
+|------|-------|--------|------|
+| A: 전처리 (TDD 재구성) | 01 부트스트랩 — Typer + pytest | `voxprep version` | ✅ |
+|  | 02 `.list` 파서 (Value Object) | `ListEntry` | ✅ |
+|  | 03 `slice` 커맨드 | `voxprep slice` | ✅ |
+|  | 04 `asr` 커맨드 | `voxprep asr` | ✅ |
+|  | 05~09 `review` (이동/재생/편집/삭제+undo/자동 플래그) | `voxprep review [--auto-prune]` | ✅ |
+|  | 10 `prep` 파이프라인 | `voxprep prep` | ✅ |
+| B: UX + 유틸 | 11 진행률 표시 (Rich Live) | — | ⏳ |
+|  | 12 `to-wav` (영상 → WAV) | `voxprep to-wav` | ⏳ |
+|  | 18 review 루프 통합 (auto-prune 에 풀 UI) | — | ⏳ |
+| C: 특징 추출 + 학습 (이식) | 13 `extract` | `voxprep extract` | ✅ |
+|  | 14 `train {sovits,gpt,all}` | `voxprep train …` | ✅ |
+| D: 추론 (이식) | 15 `infer` CLI 세션 + 참조 오디오 자동 선택 | `voxprep infer [--autoselect]` | ✅ |
+|  | 16 tkinter GUI | 독립 앱 | ⏳ |
+|  | 17 MCP / REST (LLM tool-use) | 서비스 | ⏳ |
+| E: 정제 | 19 ODP 46규칙 기반 리팩터 | 구조 개선 | ⏳ |
+|  | 20 설정 파일 + CLI 오버라이드 체계 | `voxprep config {show,init,edit,path}` | ⏳ |
 
 범례: ✅ 완료 · 🔄 진행 중 · ⏳ 예정
 
-각 Phase는 [`docs/phases/`](docs/phases/)에 가이드가, [`learnings/phaseNN-qa.md`](learnings/)에 Q&A가, [`learnings/DISCOVERIES.md`](learnings/DISCOVERIES.md)에 Phase를 가로지르는 원칙이 누적됩니다.
+각 Phase 가이드는 [`docs/phases/`](docs/phases/), 핸즈온 사용 매뉴얼은 [`docs/GUIDE.md`](docs/GUIDE.md), 디자인 맵은 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ---
 
 ## `.list` 포맷
 
-리라이트 대상(GPT-SoVITS)과 voxprep이 공유하는 포맷이며, ASR 결과가 학습으로 넘어가는 통로입니다:
+모든 단계를 연결하는 데이터 계약:
 
 ```
 audio_path|speaker_name|language|text
 ```
 
-- `|`로 구분된 4 필드 (`text` 안에 파이프 포함 시 양방향 모두 파싱 에러)
-- UTF-8, 줄바꿈 구분, **파일 끝 개행 없음** (원본의 `"\n".join(...)`과 일치)
-- 언어 코드는 **파서 경계에서 소문자로 정규화** — 근거는 [경계에서 정규화 원칙](learnings/DISCOVERIES.md) 참고
+- `|` 로 구분된 4 필드 (`text` 안에 파이프 포함 시 양방향 모두 파싱 에러)
+- UTF-8, 줄바꿈 구분, **파일 끝 개행 없음** (원본의 `"\n".join(...)` 과 일치)
+- 언어 코드는 **파서 경계에서 소문자로 정규화** — [경계에서 정규화 원칙](learnings/DISCOVERIES.md) 참고
 
-이 파서가 voxprep의 첫 Value Object이자 "데이터는 경계에서 검증한다" 원칙이 처음 강제되는 자리입니다.
+이 파서가 voxprep 의 첫 Value Object 이자 "데이터는 경계에서 검증한다" 원칙이 처음 강제되는 자리입니다.
 
 ---
 
 ## 기술 스택
 
-| 영역 | 기술 | 비고 |
-|------|------|------|
-| **언어** | Python 3.12 | `.python-version`으로 고정 |
-| **CLI** | Typer 0.24 | 서브커맨드 그룹, 자동 `--help` |
-| **터미널 출력** | Rich 15 | 컬러, 테이블, subprocess 스트리밍용 `rich.progress.Progress` |
-| **대화형 입력** | prompt_toolkit 3 | Phase 07에서 `default=` 기반 인라인 편집 |
-| **테스트** | pytest 9 + Typer `CliRunner` | 단위 + 통합(`tmp_path` e2e) |
-| **패키지 관리** | [uv](https://github.com/astral-sh/uv) | `uv sync` + `uv.lock`, project 모드 |
-| **리라이트 원본** | [GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS) | `tools/`와 `GPT_SoVITS/prepare_datasets/`를 직접 읽음 |
+| 영역 | 기술 |
+|------|------|
+| **언어** | Python 3.12 (`.python-version` 으로 고정) |
+| **CLI** | Typer 0.24 — 서브커맨드 그룹, 자동 `--help` |
+| **터미널** | Rich — 컬러, 테이블, 진행률 |
+| **대화형 입력** | prompt_toolkit — 인라인 편집, raw-mode 키 읽기 |
+| **ASR** | faster-whisper + CTranslate2 (macOS CPU, 그 외 CUDA) |
+| **ML 스택** | torch 2.11, torchaudio, transformers ≤ 4.50, pytorch-lightning, peft |
+| **오디오** | librosa 0.10, scipy, soundfile, numpy < 2.0, ffmpeg-python |
+| **텍스트 처리** | pypinyin, jieba, pyopenjtalk, g2p_en, jamo, ko_pron, g2pk2, python-mecab-ko, ToJyutping |
+| **테스트** | pytest 9 + Typer `CliRunner` — 73 테스트, 단위 + 통합 (`tmp_path` e2e) |
+| **패키지 관리** | [uv](https://github.com/astral-sh/uv) (`uv sync`, 커밋된 `uv.lock`) |
 
-**Phase 04 이후 의존성**(`faster-whisper`, `ctranslate2`, `torch`)은 ASR Phase에 들어갈 때 `uv add`로 추가합니다. 그 전까지는 의존성 풋프린트가 의도적으로 작습니다.
+직접 의존성이 Phase 15 시점 약 40개. 사전훈련 가중치까지 포함하면 venv + models 합쳐 ~5GB 규모.
 
 ---
 
 ## 프로젝트 구조
 
-현재 상태 — Phase 01~02 일부 완료. 이후 Phase는 아래 트리에서 Phase 번호가 표시된 디렉토리에 추가됩니다:
-
 ```
 voxprep/
 ├── src/voxprep/
-│   ├── __init__.py              # __version__ (단일 진실 원천)
-│   ├── cli.py                   # Typer 앱 + version 커맨드        Phase 01 ✅
-│   ├── parsing/                 # .list 파서                       Phase 02 🔄
-│   │   ├── list_file.py         #   ListEntry Value Object
-│   │   └── errors.py            #   MalformedListLineError
-│   ├── commands/                #   서브커맨드별 얇은 어댑터       Phase 03+
-│   ├── slicing/                 #   slicer2 리라이트                Phase 03
-│   ├── transcription/           #   faster-whisper 래퍼             Phase 04
-│   ├── review/                  #   대화형 TUI                     Phase 05~09
-│   └── pipeline/                #   prep 올인원                    Phase 10
+│   ├── cli.py                      # Typer 앱 — 모든 서브커맨드 등록
+│   ├── commands/                   # 얇은 CLI 어댑터 (서브커맨드 1:1)
+│   │   ├── slice.py, asr.py, review.py, prep.py
+│   │   ├── extract.py, train.py, infer.py
+│   ├── parsing/                    # .list 파서 (ListEntry VO + errors)
+│   ├── slicing/                    # Slicer Service + Chunk VO + SliceOptions VO
+│   ├── transcription/              # WhisperTranscriber + WhisperLike Protocol + AsrOptions
+│   ├── review/                     # ReviewSession Entity + Dispatcher + issues + players
+│   ├── pipeline/                   # Workspace VO + slice_step/asr_step/review_step
+│   ├── extract/                    # ▼▼ 이식본 ▼▼  BERT/HuBERT/SV/semantic 추출
+│   │   ├── text_features.py, hubert_features.py, speaker_vectors.py, semantic_tokens.py
+│   │   ├── cnhubert.py, audio_utils.py, hparams.py, models_path.py
+│   │   ├── text/                   # 업스트림 text/ — 음소 변환 (28 파일, 다국어)
+│   │   ├── module/                 # 업스트림 module/ — SoVITS VQ + 지원 (16 파일)
+│   │   ├── eres2net/               # 업스트림 화자 벡터 모델
+│   │   └── configs/                # s1/s2 설정 템플릿
+│   ├── training/                   # ▼▼ 이식본 ▼▼  SoVITS (s2) + GPT (s1) 학습
+│   │   ├── s2_train.py, s1_train.py, process_ckpt.py, utils.py
+│   │   ├── AR/                     # 업스트림 AR/ — GPT 모델
+│   │   ├── config_builder.py       # SovitsTrainOptions / GptTrainOptions VO
+│   │   └── i18n/                   # 업스트림 locale 파일
+│   └── inference/                  # ▼▼ 이식본 ▼▼  TTS 추론
+│       ├── session.py              # InferenceSession + InferenceInputs VO
+│       ├── ref_picker.py           # RefCandidate VO + rank_candidates
+│       ├── sv.py, tts_pack/        # 업스트림 TTS_infer_pack
 │
-├── tests/
-│   ├── conftest.py
-│   ├── unit/                    # 빠른 in-process 테스트
-│   │   ├── test_version.py
-│   │   └── test_list_parser.py
-│   └── integration/             # CliRunner + tmp_path e2e          Phase 03+
+├── tests/                          # 73 테스트 (단위 + 통합)
+│   ├── fixtures/                   # 공용 더블 (FakeWhisperModel, SpyPlayer, …)
+│   ├── unit/                       # in-process
+│   └── integration/                # CliRunner + tmp_path e2e
 │
-├── docs/                        # Claude 저작 — 스펙과 가이드
-│   ├── README.md                # 10-Phase 로드맵 (상태 포함)
-│   └── phases/
-│       ├── phase01-bootstrap.md
-│       ├── phase02-list-parser.md
-│       └── ... (phase03~10)
+├── docs/
+│   ├── README.md                   # Phase 인덱스 (로드맵 뷰)
+│   ├── GUIDE.md                    # 엔드 투 엔드 사용 가이드 (설치 → 추론)
+│   ├── ARCHITECTURE.md             # ODP 분류 맵 + Mermaid 다이어그램
+│   └── phases/                     # 각 Phase 가이드 (phase01 … phase20)
 │
-├── learnings/                   # 사용자 저작 — 진짜 산출물
-│   ├── README.md                # 학습 맵 (Phase → 2줄 요약)
-│   ├── phase01-qa.md            # Phase별 Q&A
-│   ├── phase02-qa.md
-│   └── DISCOVERIES.md           # 함정 + 설계 원칙 (Phase 경계 초월)
+├── learnings/                      # 사용자 저작 Q&A + 발견
 │
-├── CLAUDE.md                    # Claude용 튜터 모드 계약
-├── .python-version              # 3.12
-├── pyproject.toml               # [dependency-groups].dev, [project.scripts]
-└── uv.lock                      # 재현성을 위해 추적
+├── models/                         # (.gitignore) 사전훈련 + 학습 가중치
+│   ├── pretrained/                 # chinese-hubert-base, v2Pro, sv, s1v3.ckpt, …
+│   └── trained/                    # SoVITS_weights_v2Pro, GPT_weights_v2Pro
+│
+├── logs/                           # (.gitignore) 실험별 특징 추출 산출물
+├── infer_out/                      # (.gitignore) voxprep infer 로 생성된 WAV
+│
+├── CLAUDE.md                       # 튜터 모드 계약 + 프로젝트 전체 규칙
+├── .python-version                 # 3.12
+├── pyproject.toml
+└── uv.lock                         # 재현성을 위해 추적
 ```
+
+`models/`, `logs/`, `infer_out/`, `GPT-SoVITS/`(vendor 참조본)은 모두 gitignore. 가중치는 별도 다운로드([`docs/GUIDE.md`](docs/GUIDE.md) §2 참조).
 
 ---
 
 ## 실행
 
-**요구 사항:** [uv](https://docs.astral.sh/uv/). 필요하면 uv가 Python 3.12를 자동 설치합니다.
+**요구 사항:** [uv](https://docs.astral.sh/uv/) (필요하면 Python 3.12 자동 설치), 시스템 PATH 에 `ffmpeg`.
 
 ```bash
 git clone https://github.com/tomato-data/voxprep.git
 cd voxprep
-uv sync
+uv sync                              # 첫 설치 ~2분, torch + transformers + 텍스트 deps 포함
 
-# 테스트 실행
-uv run pytest tests/ -v
-
-# CLI 실행 (현재는 version 커맨드만 연결됨)
-uv run voxprep --help
-uv run voxprep version
-# → 0.0.1
+uv run pytest tests/ -v              # 73개 통과
+uv run voxprep --help                # 전체 커맨드 표면
 ```
 
-Phase 04 이후로는 `uv add`로 `faster-whisper` 등이 들어옵니다. 그 전까지는 설치가 분 단위가 아니라 초 단위입니다.
+이후 사전훈련 가중치를 [`docs/GUIDE.md`](docs/GUIDE.md) §2 에 따라 `models/pretrained/` 에 배치하면 전 파이프라인 실행 준비 완료.
+
+최소 엔드 투 엔드 스모크 테스트 (한국어, v2Pro, MP3/MP4 시작):
+
+```bash
+python3 utils/extract_wav.py /path/to/source.mp4
+mv /path/to/source.wav ~/Desktop/raw_audio/
+
+uv run voxprep prep ~/Desktop/raw_audio \
+  --workspace ~/Desktop/datasets/demo --speaker demo \
+  --sample-rate 44100 --skip-review
+
+uv run voxprep review ~/Desktop/datasets/demo/final.list          # 키보드 기반 검수
+uv run voxprep extract --list-file ~/Desktop/datasets/demo/final.list \
+                       --wav-dir ~/Desktop/datasets/demo/chunks \
+                       --exp-name demo_v1
+
+uv run voxprep train all --exp-name demo_v1 \
+                         --sovits-epochs 12 --gpt-epochs 20 --save-every 4
+
+uv run voxprep infer --ref-list ~/Desktop/datasets/demo/final.list --autoselect
+```
+
+각 커맨드에 `--help` 지원, 업스트림 노브는 전부 플래그로 접근 가능.
 
 ---
 
 ## 읽는 순서 (학습 목적으로 오셨다면)
 
-이 레포에서 가장 흥미로운 경로는 **아직 코드가 아닙니다** — 코드는 진행 중이거든요. 의미 있는 경로는 **방법론 + 여정**입니다:
+목적에 따라 두 경로:
 
-1. [`CLAUDE.md`](CLAUDE.md) — 튜터 모드 계약, CLI 일차성 프레이밍, Tidy First 규칙, "설정 노브는 SETUP_GUIDE에" 방침
-2. [`docs/README.md`](docs/README.md) — 10-Phase 로드맵
-3. [`docs/phases/phase01-bootstrap.md`](docs/phases/phase01-bootstrap.md) — Phase 가이드가 어떻게 생겼는지, RED 진화 시나리오 포함
-4. [`learnings/phase01-qa.md`](learnings/phase01-qa.md) — Phase 01에서 실제로 제가 던진 질문들 (`CliRunner` 내부 동작, exit code의 HTTP status 비유, 왜 지금 uv로 갈아타는가)
-5. [`learnings/DISCOVERIES.md`](learnings/DISCOVERIES.md) — Phase 경계를 가로지르는 함정과 설계 원칙. Phase 01의 Typer 함정 두 개와 Phase 02의 "경계에서 정규화" 원칙이 모두 여기 있습니다
-6. 로드맵이 ✅로 바뀌는 걸 따라오세요
+**"이거 어떻게 쓰나?"**
+1. [`docs/GUIDE.md`](docs/GUIDE.md) — 설치, 가중치 배치, 엔드 투 엔드 커맨드
+2. `voxprep --help` (와 `voxprep <cmd> --help`) — 모든 플래그가 CLI 안에 문서화
+3. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §7 — 파일별 역할이 달린 디렉토리 맵
 
-git log도 일부러 읽을 만하게 만들었습니다 — 모든 커밋이 Tidy First 단위입니다 (`feat:` 행동 변경, `refactor:` 구조 변경, `docs:` 회고/원칙, `chore:` 인프라). 혼합 커밋은 없습니다.
+**"이거 어떻게 만들어졌나?"**
+1. [`CLAUDE.md`](CLAUDE.md) — 튜터 모드 계약, Tidy First 규칙, 이식 코드 경계 정책
+2. [`docs/README.md`](docs/README.md) — Phase 인덱스와 각 문서 링크
+3. [`docs/phases/phase01-bootstrap.md`](docs/phases/phase01-bootstrap.md) — Phase 가이드 예시 (RED 진화 시나리오 포함)
+4. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — 전체 객체 맵 (14 VO, 1 Entity, 11 Service) + 각 단계 Mermaid 다이어그램
+5. [`docs/phases/phase19-odp-refinement.md`](docs/phases/phase19-odp-refinement.md) — Noback 46규칙 기반 자체 평가 + 개선 계획
+6. [`learnings/`](learnings/) — 각 Phase 실제 질의응답
+
+git log 도 의도적으로 읽을 만하게 구성했습니다. 모든 커밋이 Tidy First 단위(`feat:` / `refactor:` / `test:` / `docs:` / `chore:`), 혼합 커밋 없음.
 
 ---
 
 ## 크레딧
 
-voxprep은 [RVC-Boss](https://github.com/RVC-Boss)와 기여자들이 만든 **[GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS)**의 전처리 프런트엔드를 다시 작성한 프로젝트입니다. GPT-SoVITS는 MIT 라이선스(Copyright © 2024 RVC-Boss)로 공개되어 있습니다. voxprep의 파일 포맷·알고리즘·기본값은 모두 GPT-SoVITS에서 가져왔습니다 — 특히 `tools/slicer2.py`의 분할 로직, `tools/asr/fasterwhisper_asr.py`의 ASR 래퍼, `GPT_SoVITS/prepare_datasets/1-get-text.py`의 `.list` 소비 코드를 직접 읽으며 각 Phase를 작성했습니다. GPT-SoVITS의 소스는 이 레포지토리에 포함·배포되지 않으며, 개발 중 참조용으로만 사용합니다.
+voxprep 은 [RVC-Boss](https://github.com/RVC-Boss) 와 기여자들이 만든 **[GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS)** 위에서 동작합니다. GPT-SoVITS 는 MIT 라이선스(Copyright © 2024 RVC-Boss).
 
-voxprep이 쓸 만하셨다면 원본 GPT-SoVITS에도 스타 한 번 눌러 주시면 좋겠습니다. 무거운 작업인 학습과 추론은 전부 그쪽이 하고, voxprep은 그 앞에 붙는 전처리 단계를 터미널에서 덜 귀찮게 만든 것뿐입니다.
+- 전처리 파일 포맷, 슬라이서 휴리스틱, `.list` 계약, ASR 기본값은 업스트림의 `tools/slicer2.py`, `tools/asr/fasterwhisper_asr.py`, `GPT_SoVITS/prepare_datasets/1-get-text.py` 에서 가져옴
+- `src/voxprep/{extract,training,inference}/` 안의 특징 추출·학습·추론 단계는 업스트림의 `AR/`, `module/`, `text/`, `TTS_infer_pack/`, `eres2net/`, `s1_train.py`, `s2_train.py` 를 직접 이식한 것 — import 경로, Typer 어댑터, voxprep 디렉토리 컨벤션에 맞춰 최소 수정만. 의미 있는 위치에는 `# ported from …` 주석으로 파일 단위 출처 보존
+
+voxprep 이 유용하셨다면 업스트림에도 스타 한 번 눌러주시면 좋겠습니다. 학습과 추론 — 진짜 무거운 부분 — 은 전부 업스트림이 하고, voxprep 은 그 앞뒤를 정리해 한 CLI 안에 묶은 것뿐입니다.
 
 ---
 
 ## 참고 자료
 
-- **[GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS)** — 리라이트 대상. `tools/slicer2.py`, `tools/asr/fasterwhisper_asr.py`, `GPT_SoVITS/prepare_datasets/1-get-text.py`가 각 Phase 가이드와 함께 읽는 핵심 파일
-- **Object Design Style Guide** — Matthias Noback. 서비스·엔티티·Value Object·메서드·아키텍처·테스팅에 대한 46가지 규칙
-- **Test Driven Development: By Example** — Kent Beck. Red-Green-Refactor 사이클과 "테스트가 곧 명세"
-- **Tidy First?** — Kent Beck. 구조 변경과 행동 변경을 커밋 단위에서 분리
+- **[GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS)** — 업스트림 프로젝트
+- **Object Design Style Guide** — Matthias Noback. 서비스·엔티티·Value Object·메서드·아키텍처·테스트에 대한 46규칙. voxprep 에 적용한 리뷰: [`docs/phases/phase19-odp-refinement.md`](docs/phases/phase19-odp-refinement.md)
+- **Test Driven Development: By Example** — Kent Beck. Red-Green-Refactor, 테스트가 곧 명세
+- **Tidy First?** — Kent Beck. 구조 변경과 행동 변경의 커밋 분리
 - **[Typer](https://typer.tiangolo.com/)**, **[Rich](https://rich.readthedocs.io/)**, **[prompt_toolkit](https://python-prompt-toolkit.readthedocs.io/)** — CLI craft 3종 세트
-- **[uv](https://docs.astral.sh/uv/)** — pip + venv + pyenv를 하나로 합친 빠른 패키지/프로젝트 매니저
+- **[uv](https://docs.astral.sh/uv/)** — 빠른 패키지/프로젝트 매니저
 
 ---

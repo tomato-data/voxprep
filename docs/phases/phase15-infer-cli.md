@@ -28,7 +28,7 @@ $ voxprep infer
 
 Available models:
   [1] myvoice_v1 (SoVITS: e10, GPT: e20)
-  [2] noir_1 (SoVITS: e8, GPT: e15)
+  [2] demo_v1 (SoVITS: e8, GPT: e15)
 
 Select model [1]: 1
 Reference audio: ./ref/sample.wav
